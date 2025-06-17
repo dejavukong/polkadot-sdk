@@ -150,6 +150,16 @@ impl EthRpcServer for EthRpcServerImpl {
 		transaction: GenericTransaction,
 		block: Option<BlockNumberOrTagOrHash>,
 	) -> RpcResult<Bytes> {
+		log::warn!(
+						target: "LATENCY",
+						"===== eth_call START！",
+				);
+
+		log::warn!(
+						target: "LATENCY",
+						"EthRpcServer::call: from, {:?}",
+						&transaction,
+				);
 		let dry_run = self
 			.client
 			.dry_run(transaction, block.unwrap_or_else(|| BlockTag::Latest.into()))

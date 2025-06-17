@@ -571,8 +571,19 @@ impl Client {
 	) -> Result<EthTransactInfo<Balance>, ClientError> {
 		let runtime_api = self.runtime_api(&block).await?;
 		let payload = subxt_client::apis().revive_api().eth_transact(tx.into());
+		log::warn!(
+						target: "LATENCY",
+						"Client::dry_run: payload, {:?}",
+						&payload,
+				);
 
 		let result = runtime_api.call(payload).await?;
+
+		log::warn!(
+						target: "LATENCY",
+						"Client::dry_run: result, {:?}",
+						&result,
+				);
 		match result {
 			Err(err) => {
 				log::debug!(target: LOG_TARGET, "Dry run failed {err:?}");

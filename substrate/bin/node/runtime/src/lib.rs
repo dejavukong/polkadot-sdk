@@ -3613,12 +3613,35 @@ impl_runtime_apis! {
 
 		fn eth_transact(tx: pallet_revive::evm::GenericTransaction) -> Result<pallet_revive::EthTransactInfo<Balance>, pallet_revive::EthTransactError>
 		{
+			log::warn!(
+					target: "LATENCY",
+					"=========eth_transact START!",
+			);
+
+			let block_number = System::block_number();
+
+			log::warn!(
+					target: "LATENCY",
+					"eth_transact: tx, {:?}, at block_number: {}",
+					&tx,
+					&block_number
+			);
 			let blockweights: BlockWeights = <Runtime as frame_system::Config>::BlockWeights::get();
 			let tx_fee = |pallet_call, mut dispatch_info: DispatchInfo| {
 				let call = RuntimeCall::Revive(pallet_call);
+				log::warn!(
+					target: "LATENCY",
+					"eth_transact: call, {:?} at block_number: {}",
+					&call,
+					&block_number
+				);
 				dispatch_info.extension_weight = EthExtraImpl::get_eth_extension(0, 0u32.into()).weight(&call);
 				let uxt: UncheckedExtrinsic = sp_runtime::generic::UncheckedExtrinsic::new_bare(call).into();
-
+				log::warn!(
+						target: "LATENCY",
+						"eth_transact: uxt, {:?}",
+						&uxt,
+				);
 				pallet_transaction_payment::Pallet::<Runtime>::compute_fee(
 					uxt.encoded_size() as u32,
 					&dispatch_info,

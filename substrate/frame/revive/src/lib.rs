@@ -41,6 +41,7 @@ pub mod test_utils;
 pub mod tracing;
 pub mod weights;
 
+use hex;
 use crate::{
 	evm::{runtime::GAS_PRICE, CallTrace, GasEncoder, GenericTransaction, TracerConfig},
 	exec::{AccountIdOf, ExecError, Executable, Key, Stack as ExecStack},
@@ -1018,6 +1019,13 @@ where
 				data,
 				storage_deposit_limit.is_unchecked(),
 			)?;
+
+			log::warn!(
+						target: "LATENCY",
+						"bare_call: result: flag {:?}, data: {}",
+						&result.flags,
+						&hex::encode(&result.data)
+				);
 			storage_deposit = storage_meter
 				.try_into_deposit(&origin, storage_deposit_limit.is_unchecked())
 				.inspect_err(|err| {
@@ -1129,6 +1137,11 @@ where
 		log::trace!(target: LOG_TARGET, "bare_eth_transact: tx: {tx:?} gas_limit: {gas_limit:?}");
 
 		let from = tx.from.unwrap_or_default();
+		log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: from, {}",
+						&from,
+				);
 		let origin = T::AddressMapper::to_account_id(&from);
 
 		let storage_deposit_limit = if tx.gas.is_some() {
@@ -1158,8 +1171,17 @@ where
 			Err(_) => return Err(EthTransactError::Message("Failed to convert value".into())),
 		};
 
+		log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: native_value, {:?}",
+						&native_value,
+				);
 		let input = tx.input.clone().unwrap_or_default().0;
-
+		log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: input, {}",
+						&hex::encode(&input),
+				);
 		let extract_error = |err| {
 			if err == Error::<T>::TransferFailed.into() ||
 				err == Error::<T>::StorageDepositNotEnoughFunds.into() ||
@@ -1181,6 +1203,11 @@ where
 		let (mut result, dispatch_info) = match tx.to {
 			// A contract call.
 			Some(dest) => {
+				log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: dest, {}",
+						&dest,
+				);
 				// Dry run the call.
 				let result = crate::Pallet::<T>::bare_call(
 					T::RuntimeOrigin::signed(origin),
@@ -1191,11 +1218,24 @@ where
 					input.clone(),
 				);
 
+				log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: result, {:?}",
+						&result,
+				);
+
 				let data = match result.result {
 					Ok(return_value) => {
 						if return_value.did_revert() {
 							return Err(EthTransactError::Data(return_value.data));
 						}
+
+						log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: return_value, {:?}",
+						&return_value,
+				);
+
 						return_value.data
 					},
 					Err(err) => {
@@ -1203,6 +1243,13 @@ where
 						return extract_error(err)
 					},
 				};
+
+
+				log::warn!(
+						target: "LATENCY",
+						"bare_eth_transact: data, {:?}",
+						&data,
+				);
 
 				let result = EthTransactInfo {
 					gas_required: result.gas_required,
@@ -1421,6 +1468,15 @@ where
 		}
 
 		let (quotient, remainder) = value.div_mod(T::NativeToEthRatio::get().into());
+
+		log::warn!(
+			target: "LATENCY",
+			"convert_evm_to_native: value: {}, quotient: {}, remainder: {}",
+			&value,
+			&quotient,
+			&remainder
+		);
+
 		match (precision, remainder.is_zero()) {
 			(ConversionPrecision::Exact, false) => Err(Error::<T>::DecimalPrecisionLoss),
 			(_, true) => quotient.try_into().map_err(|_| Error::<T>::BalanceConversionFailed),

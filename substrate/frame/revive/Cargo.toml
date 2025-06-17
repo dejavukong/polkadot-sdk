@@ -23,7 +23,6 @@ derive_more = { workspace = true }
 environmental = { workspace = true }
 ethabi = { workspace = true }
 ethereum-types = { workspace = true, features = ["codec", "rlp", "serialize"] }
-hex = { workspace = true }
 hex-literal = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 log = { workspace = true }
@@ -32,11 +31,8 @@ polkavm = { version = "0.21.0", default-features = false }
 polkavm-common = { version = "0.21.0", default-features = false, optional = true }
 rlp = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
-serde = { features = [
-	"alloc",
-	"derive",
-], workspace = true, default-features = false }
-
+serde = { features = ["alloc", "derive"], workspace = true, default-features = false }
+hex = { workspace = true, default-features = false }
 # Polkadot SDK Dependencies
 frame-benchmarking = { optional = true, workspace = true }
 frame-support = { workspace = true }
@@ -113,6 +109,7 @@ std = [
 	"subxt-signer",
 	"xcm-builder/std",
 	"xcm/std",
+	"hex/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

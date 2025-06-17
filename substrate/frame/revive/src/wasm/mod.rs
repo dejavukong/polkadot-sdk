@@ -364,6 +364,11 @@ where
 {
 	fn from_storage(code_hash: H256, gas_meter: &mut GasMeter<T>) -> Result<Self, DispatchError> {
 		let code_info = <CodeInfoOf<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
+		log::warn!(
+			target: "LATENCY",
+			"Wasm_interface::from_Storage: code_hash: {}",
+			code_hash
+		);
 		gas_meter.charge(CodeLoadToken(code_info.code_len))?;
 		let code = <PristineCode<T>>::get(code_hash).ok_or(Error::<T>::CodeNotFound)?;
 		Ok(Self { code, code_info, code_hash })
@@ -375,6 +380,11 @@ where
 		function: ExportedFunction,
 		input_data: Vec<u8>,
 	) -> ExecResult {
+		log::warn!(
+			target: "LATENCY",
+			"Wasmblob::execute: input_data: {:?}",
+			&hex::encode(&input_data)
+		);
 		let prepared_call = self.prepare_call(Runtime::new(ext, input_data), function)?;
 		prepared_call.call()
 	}

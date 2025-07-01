@@ -729,6 +729,11 @@ where
 		input_data: Vec<u8>,
 		skip_transfer: bool,
 	) -> ExecResult {
+		log::warn!(
+						target: "LATENCY",
+						"run_call: dest, {:?}",
+						&dest,
+				);
 		let dest = T::AddressMapper::to_account_id(&dest);
 		if let Some((mut stack, executable)) = Self::new(
 			FrameArgs::Call { dest: dest.clone(), cached_info: None, delegated_call: None },
@@ -1031,6 +1036,18 @@ where
 			);
 		});
 
+		log::warn!(
+			target: "LATENCY",
+			"Stack::run: caller: {:?} to: {:?}, is_delegate: {}, read_only: {}, value: {}, input_data, {:?}, gasleft:{}",
+			self.caller().account_id().map(T::AddressMapper::to_address).unwrap_or_default(),
+			T::AddressMapper::to_address(&frame.account_id),
+			frame.delegate.is_some(),
+			frame.read_only,
+			frame.value_transferred,
+			hex::encode(&input_data),
+			frame.nested_gas.gas_left(),
+		);
+
 		// The output of the caller frame will be replaced by the output of this run.
 		// It is also not accessible from nested frames.
 		// Hence we drop it early to save the memory.
@@ -1096,6 +1113,12 @@ where
 				.execute(self, entry_point, input_data)
 				.map_err(|e| ExecError { error: e.error, origin: ErrorOrigin::Callee })?;
 
+			log::warn!(
+						target: "LATENCY",
+						"Stack::run: executable.execute.output, flags: {:?}, data: {},",
+						&output.flags,
+						&hex::encode(&output.data)
+				);
 			// Avoid useless work that would be reverted anyways.
 			if output.did_revert() {
 				return Ok(output);
@@ -1146,7 +1169,15 @@ where
 				if_tracing(|tracer| {
 					let gas_consumed = top_frame!(self).nested_gas.gas_consumed();
 					match &output {
-						Ok(output) => tracer.exit_child_span(&output, gas_consumed),
+						Ok(output) => {
+							log::warn!(
+								target: "LATENCY",
+								"Stack::run: transaction_outcome: sucess: {}, output: {:?}",
+								&success,
+								&output.data
+							);
+							tracer.exit_child_span(&output, gas_consumed)
+						},
 						Err(e) => tracer.exit_child_span_with_error(e.error.into(), gas_consumed),
 					}
 				});

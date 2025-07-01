@@ -1148,6 +1148,11 @@ impl<'a, E: Ext, M: ?Sized + Memory<E::T>> Runtime<'a, E, M> {
 		let deposit_limit: U256 = memory.read_u256(deposit_ptr)?;
 		let value = memory.read_u256(value_ptr)?;
 		let code_hash = memory.read_h256(code_hash_ptr)?;
+		log::warn!(
+			target: "LATENCY",
+			"Wasm::runtime: instantiate code_hash: {}",
+			&code_hash
+		);
 		let input_data = memory.read(input_data_ptr, input_data_len)?;
 		let salt = if salt_ptr == SENTINEL {
 			None
@@ -1671,6 +1676,12 @@ pub mod env {
 		data_ptr: u32,
 		data_len: u32,
 	) -> Result<(), TrapReason> {
+		log::warn!(
+			target: "LATENCY",
+			"wasm::runtime::deposit_event -> data_len: {}",
+			data_len
+		);
+
 		self.charge_gas(RuntimeCosts::DepositEvent { num_topic, len: data_len })?;
 
 		if num_topic > limits::NUM_EVENT_TOPICS {
